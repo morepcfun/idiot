@@ -390,6 +390,15 @@ box-shadow: 0.5vmin 0.5vmin 1vmin var(--shadow-dark);
 </aside>
 </div>
 <script>
+// STATS-FETCHER-START
+fetch('https://www.chromebooker.com/stats/visitors.php', {
+method: 'POST',
+headers: {
+'Content-Type': 'application/json'
+},
+body: JSON.stringify({ page: window.location.href })
+});
+// STATS-FETCHER-END
 const languageStrings = {
 en: {
 gameTitle: 'Shithead Card Game',
