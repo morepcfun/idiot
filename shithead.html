@@ -3,9 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>Shithead</title>
-<meta name="author" content="Johnny Heggelund">
-<link rel="icon" type="image/x-icon" href="favicon.ico">
+<title>Shithead Card Game Online</title>
+<meta name="description" content="Enjoy a free game of the classic and hilarious card game Shithead with an AI opponent right in your browser.">
+<meta name="author" content="AI Girl & Bossman">
+<meta name="robots" content="index, follow">
 <style>
 :root {
 --felt-green: #0a632b;
@@ -108,6 +109,7 @@ width: 100%;
 flex-shrink: 0;
 box-shadow: 0 -4px 10px var(--shadow-dark);
 max-height: 40%;
+z-index: 50;
 }
 .panel-header {
 padding: 0.75rem;
@@ -366,7 +368,7 @@ margin-left: 0;
 #player-hand .card:hover {
 transform: translateY(-2vmin) scale(1.1);
 position: relative;
-z-index: 10;
+z-index: 60;
 box-shadow: 0.5vmin 0.5vmin 1vmin var(--shadow-dark);
 }
 </style>
@@ -375,74 +377,61 @@ box-shadow: 0.5vmin 0.5vmin 1vmin var(--shadow-dark);
 <div class="container">
 <main class="main-content">
 <div id="game-status-overlay" class="game-status-overlay" align="center">
-<h1>Shithead Card Game</h1>
+<h1></h1>
 <p class="status-text"></p>
-<button id="start-game-btn">Play Against Computer</button>
+<button id="start-game-btn"></button>
 </div>
 <div id="game-table"></div>
 </main>
 <aside class="right-panel">
 <div class="panel-header">
-<h3 id="info-panel-header">RULES</h3>
+<h3 id="info-panel-header"></h3>
 </div>
 <div id="info-panel-body" class="panel-body">
 </div>
 </aside>
 </div>
 <script>
-// STATS-FETCHER-START
-fetch('https://www.chromebooker.com/stats/visitors.php', {
-method: 'POST',
-headers: {
-'Content-Type': 'application/json'
-},
-body: JSON.stringify({ page: window.location.href })
-});
-// STATS-FETCHER-END
-const languageStrings = {
-en: {
-gameTitle: 'Shithead Card Game',
-playButton: 'Play Against Computer',
-rulesTitle: 'RULES',
-logTitle: 'LOG',
-pileLabel: 'PILE',
-playerName: 'Player',
-aiName: 'Computer',
-rulesGoal: '<strong>Goal:</strong> Be the first to get rid of all your cards. The last player with cards is the Shithead!',
-rulesGameplay: '<strong>Gameplay:</strong> Play a card with equal or higher value than the top card of the pile. If you can\'t play, you must pick up the whole pile.',
-rulesCardOrder: '<strong>Card order:</strong> (Lowest to Highest) 3, 4, 5, 6, 7, 8, 9, J, Q, K, A.',
-rulesSpecialCards: '<strong>Special cards:</strong>',
-rulesCard2: '<strong>2:</strong> Resets the pile. Can be played on anything. Next player can play any card.',
-rulesCard10: '<strong>10:</strong> Burns the pile. The pile is removed, and you get another turn. Can be played on anything.',
-rulesCardFourOfAKind: '<strong>Four of a kind:</strong> Four cards of the same value in a row also burn the pile and give you another turn.',
-rulesFinal: 'Play from your hand, then face-up cards, and finally blind face-down cards.',
-gameStarted: (playerName) => `Game started. ${playerName}'s turn!`,
+const lang = {
+gameTitle: "Shithead Card Game",
+playButton: "Play Against Computer",
+rulesTitle: "RULES",
+logTitle: "LOG",
+pileLabel: "PILE",
+playerName: "Player",
+aiName: "Computer",
+rulesGoal: "<strong>Goal:</strong> Be the first to get rid of all your cards. The last player with cards left is the Shithead!",
+rulesGameplay: "<strong>Gameplay:</strong> Play a card with an equal or higher value than the top card of the pile. If you can't play, you must pick up the entire pile.",
+rulesCardOrder: "<strong>Card Order:</strong> (Lowest to highest) 3, 4, 5, 6, 7, 8, 9, J, Q, K, A.",
+rulesSpecialCards: "<strong>Special Cards:</strong>",
+rulesCard2: "<strong>2:</strong> Resets the pile. Can be played on anything. The next player can play any card.",
+rulesCard10: "<strong>10:</strong> Burns the pile. The pile is removed from play, and you get another turn. Can be played on anything.",
+rulesCardFourOfAKind: "<strong>Four of a Kind:</strong> Four cards of the same value in a row also burns the pile and gives you another turn.",
+rulesFinal: "Play from your hand, then your face-up cards, and finally your blind face-down cards.",
+gameStarted: (playerName) => `The game has started. It's ${playerName}'s turn!`,
 playerTurn: (playerName) => `It's ${playerName}'s turn.`,
 pickedUpPile: (playerName) => `${playerName} picked up the pile.`,
 burnedPile: (playerName) => `${playerName} burned the pile and gets another turn.`,
 playedCard: (playerName, card) => `${playerName} played ${card}.`,
-fourOfAKind: 'Four of a kind! The pile is burned.',
-pileReset: 'The pile is reset.',
-invalidMove: 'Invalid move! Play a higher card or pick up the pile.',
+fourOfAKind: "Four of a kind! The pile is burned.",
+pileReset: "The pile is reset.",
+invalidMove: "Invalid move! Play a higher card or pick up the pile.",
 playedBlindValid: (card) => `You played ${card} blindly... and it was a valid move!`,
 playedBlindInvalid: (card) => `You played ${card} blindly... Unlucky! You have to pick up the pile.`,
-aiPlaysBlindly: (aiName) => `${aiName} plays blindly...`,
+aiPlaysBlindly: (aiName) => `${aiName} is playing blindly...`,
 aiPlaysBlindSuccess: (aiName, card) => `${aiName} played ${card} and succeeded!`,
-aiPlaysBlindFail: (aiName, card) => `${aiName} played ${card} and had to pick up!`,
-pickupTooltip: 'Cannot play. Click to pick up the pile.',
+aiPlaysBlindFail: (aiName, card) => `${aiName} played ${card} and had to pick up the pile!`,
+pickupTooltip: "Can't play. Click to pick up the pile.",
 cardCount: (count) => (count === 1 ? '1 card' : `${count} cards`),
 winTitle: '🎉 YOU WON! 🎉',
-winText: (aiName) => `You got rid of all your cards. The ${aiName} is the Shithead!`,
+winText: (aiName) => `You got rid of all your cards. ${aiName} is the Shithead!`,
 lossTitle: '😭 YOU LOST! 😭',
-lossText: 'The computer got rid of all cards. You are the Shithead! Better luck next time.',
+lossText: 'The computer got rid of all its cards. You are the Shithead! Better luck next time.',
 playAgainButton: 'Play Again',
 renderError: 'An error occurred while rendering the game board:',
 criticalError: 'A critical error has occurred. Please reload the page.',
-}
 };
 document.addEventListener('DOMContentLoaded', () => {
-const currentLang = 'en';
-const lang = languageStrings[currentLang];
 const PLAYER_NAME = lang.playerName;
 const AI_NAME = lang.aiName;
 const INITIAL_HAND_CARDS = 3;
@@ -454,9 +443,7 @@ const BURN_PILE_DELAY = 600;
 const AI_EXTRA_TURN_DELAY = 1000;
 const AI_BURN_THRESHOLD = 5;
 const LOG_MESSAGE_LIMIT = 20;
-const CARD_RANKS = {
-'3': 1, '4': 2, '5': 3, '6': 4, '7': 5, '8': 6, '9': 7, 'J': 8, 'Q': 9, 'K': 10, 'A': 11, '2': 12, '10': 13,
-};
+const CARD_RANKS = { '3': 1, '4': 2, '5': 3, '6': 4, '7': 5, '8': 6, '9': 7, 'J': 8, 'Q': 9, 'K': 10, 'A': 11, '2': 12, '10': 13 };
 const gameTable = document.getElementById('game-table');
 const gameStatusOverlay = document.getElementById('game-status-overlay');
 const infoPanelHeader = document.getElementById('info-panel-header');
@@ -464,10 +451,8 @@ const infoPanelBody = document.getElementById('info-panel-body');
 const startGameBtn = document.getElementById('start-game-btn');
 let gameState = {};
 const getCardValue = (card) => (card ? card.slice(0, -1) : '');
-const getCardRank = (card) =>
-card ? CARD_RANKS[getCardValue(card)] || 0 : 0;
-const sortCards = (cards) =>
-cards.sort((a, b) => getCardRank(a) - getCardRank(b));
+const getCardRank = (card) => card ? CARD_RANKS[getCardValue(card)] || 0 : 0;
+const sortCards = (cards) => cards.sort((a, b) => getCardRank(a) - getCardRank(b));
 const addLogMessage = (message) => {
 gameState.log.push(message);
 if (gameState.log.length > LOG_MESSAGE_LIMIT * 2) {
@@ -478,6 +463,7 @@ updateLog();
 }
 };
 const initializeUI = () => {
+document.title = lang.gameTitle;
 document.querySelector('.game-status-overlay h1').textContent = lang.gameTitle;
 startGameBtn.textContent = lang.playButton;
 infoPanelHeader.textContent = lang.rulesTitle;
@@ -522,9 +508,7 @@ if (index > -1) {
 source.splice(index, 1);
 return true;
 }
-console.error(
-`CRITICAL ERROR: Card ${card} was not found in ${player}'s ${sourcePile}.`
-);
+console.error(`CRITICAL ERROR: Card ${card} was not found in ${player}'s ${sourcePile}.`);
 return false;
 };
 const playerPicksUpPile = (player) => {
@@ -569,11 +553,12 @@ faceDown: deck.splice(0, INITIAL_FACE_DOWN_CARDS),
 },
 deck: deck,
 discardPile: [],
-log: [lang.gameStarted(PLAYER_NAME)],
+log: [],
 turn: PLAYER_NAME,
 winner: null,
 gameInProgress: true,
 };
+addLogMessage(lang.gameStarted(PLAYER_NAME));
 renderGameBoard();
 };
 const switchTurn = () => {
@@ -708,8 +693,7 @@ ai.hand.length > 0
 : 'faceDown';
 const cardOptions = ai[playableFrom];
 if (playableFrom === 'faceDown') {
-const cardToPlay =
-cardOptions[Math.floor(Math.random() * cardOptions.length)];
+const cardToPlay = cardOptions[Math.floor(Math.random() * cardOptions.length)];
 addLogMessage(lang.aiPlaysBlindly(AI_NAME));
 setTimeout(() => {
 if (checkMoveLegality(cardToPlay)) {
@@ -732,16 +716,11 @@ playerPicksUpPile(AI_NAME);
 return;
 }
 const tens = legalMoves.filter((c) => getCardValue(c) === '10');
-if (
-tens.length > 0 &&
-gameState.discardPile.length >= AI_BURN_THRESHOLD
-) {
+if (tens.length > 0 && gameState.discardPile.length >= AI_BURN_THRESHOLD) {
 processMove(AI_NAME, tens[0], playableFrom);
 return;
 }
-let normalMoves = legalMoves.filter(
-(c) => !['2', '10'].includes(getCardValue(c))
-);
+let normalMoves = legalMoves.filter((c) => !['2', '10'].includes(getCardValue(c)));
 if (normalMoves.length > 0) {
 processMove(AI_NAME, normalMoves[0], playableFrom);
 return;
@@ -761,9 +740,7 @@ const suitChar = cardString.slice(-1);
 const suitSymbols = { H: '♥', D: '♦', C: '♣', S: '♠' };
 card.innerHTML = `<div class="card-value">${value}</div><div class="card-suit">${suitSymbols[suitChar]}</div>`;
 card.dataset.card = cardString;
-card.style.color = ['H', 'D'].includes(suitChar)
-? 'var(--red-color)'
-: '#333';
+card.style.color = ['H', 'D'].includes(suitChar) ? 'var(--red-color)' : '#333';
 if (isFaceDownOnTable) card.classList.add('face-up');
 return card;
 };
@@ -790,8 +767,7 @@ gameTable.innerHTML = '';
 const { players, deck, discardPile, turn } = gameState;
 const aiArea = document.createElement('div');
 aiArea.className = 'player-area opponent-area';
-aiArea.innerHTML = `<div class="player-info ${turn === AI_NAME ? 'active-turn' : ''
-}">${AI_NAME} (${lang.cardCount(players[AI_NAME].hand.length)})</div>`;
+aiArea.innerHTML = `<div class="player-info ${turn === AI_NAME ? 'active-turn' : ''}">${AI_NAME} (${lang.cardCount(players[AI_NAME].hand.length)})</div>`;
 const aiTableCards = document.createElement('div');
 aiTableCards.className = 'table-cards';
 players[AI_NAME].faceDown.forEach((cardStr, i) => {
@@ -799,9 +775,7 @@ const pile = document.createElement('div');
 pile.className = 'table-card-pile';
 pile.appendChild(renderCard(cardStr, false));
 if (players[AI_NAME].faceUp[i]) {
-pile.appendChild(
-renderCard(players[AI_NAME].faceUp[i], true, true)
-);
+pile.appendChild(renderCard(players[AI_NAME].faceUp[i], true, true));
 }
 aiTableCards.appendChild(pile);
 });
@@ -841,8 +815,7 @@ playArea.appendChild(discardPileDiv);
 gameTable.appendChild(playArea);
 const playerArea = document.createElement('div');
 playerArea.className = 'player-area your-area';
-playerArea.innerHTML = `<div class="player-info ${turn === PLAYER_NAME ? 'active-turn' : ''
-}">${PLAYER_NAME} (${lang.cardCount(players[PLAYER_NAME].hand.length)})</div>`;
+playerArea.innerHTML = `<div class="player-info ${turn === PLAYER_NAME ? 'active-turn' : ''}">${PLAYER_NAME} (${lang.cardCount(players[PLAYER_NAME].hand.length)})</div>`;
 const handContainer = document.createElement('div');
 handContainer.className = 'hand-container';
 const playerHand = document.createElement('div');
@@ -850,17 +823,12 @@ playerHand.id = 'player-hand';
 const playerTableCards = document.createElement('div');
 playerTableCards.className = 'cards-area table-cards';
 const canPlayFromHand = players[PLAYER_NAME].hand.length > 0;
-const canPlayFromFaceUp =
-!canPlayFromHand && players[PLAYER_NAME].faceUp.length > 0;
-const canPlayFromFaceDown =
-!canPlayFromHand &&
-!canPlayFromFaceUp &&
-players[PLAYER_NAME].faceDown.length > 0;
+const canPlayFromFaceUp = !canPlayFromHand && players[PLAYER_NAME].faceUp.length > 0;
+const canPlayFromFaceDown = !canPlayFromHand && !canPlayFromFaceUp && players[PLAYER_NAME].faceDown.length > 0;
 players[PLAYER_NAME].hand.forEach((cardStr) => {
 const cardEl = renderCard(cardStr);
 if (turn === PLAYER_NAME && canPlayFromHand) {
-cardEl.onclick = () =>
-handlePlayerMove(cardEl.dataset.card, 'hand');
+cardEl.onclick = () => handlePlayerMove(cardEl.dataset.card, 'hand');
 }
 playerHand.appendChild(cardEl);
 });
@@ -874,14 +842,12 @@ const faceUpCardEl = renderCard(players[PLAYER_NAME].faceUp[i], true, true);
 pile.appendChild(faceUpCardEl);
 if (turn === PLAYER_NAME && canPlayFromFaceUp) {
 faceUpCardEl.style.cursor = 'pointer';
-faceUpCardEl.onclick = () =>
-handlePlayerMove(faceUpCardEl.dataset.card, 'faceUp');
+faceUpCardEl.onclick = () => handlePlayerMove(faceUpCardEl.dataset.card, 'faceUp');
 }
 }
 if (turn === PLAYER_NAME && canPlayFromFaceDown) {
 faceDownCardEl.style.cursor = 'pointer';
-faceDownCardEl.onclick = () =>
-handlePlayerMove(faceDownCardEl.dataset.card, 'faceDown');
+faceDownCardEl.onclick = () => handlePlayerMove(faceDownCardEl.dataset.card, 'faceDown');
 }
 playerTableCards.appendChild(pile);
 });
@@ -926,5 +892,6 @@ setTimeout(updateHandScrollButtons, 350);
 initializeUI();
 });
 </script>
+<script src="/stats/tracker.js" defer></script>
 </body>
 </html>
